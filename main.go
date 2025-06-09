@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"time"
+
+	"github.com/schollz/progressbar/v3"
 )
 
 func clearLine() {
@@ -11,9 +13,9 @@ func clearLine() {
 }
 
 func countdown(seconds int) {
+	bar := progressbar.Default(int64(seconds))
 	for i := seconds; i >= 0; i-- {
-		clearLine()
-		fmt.Printf("%02d:%02d", i/60, i%60)
+		bar.Add(1)
 		time.Sleep(1 * time.Second)
 	}
 }
