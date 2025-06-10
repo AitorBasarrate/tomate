@@ -8,12 +8,12 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-func clearLine() {
-	fmt.Print("\033[2K\r")
-}
-
 func countdown(seconds int) {
-	bar := progressbar.Default(int64(seconds))
+	bar := progressbar.NewOptions(
+		seconds,
+		progressbar.OptionSetWidth(15),
+		progressbar.OptionShowBytes(false),
+	)
 	for i := seconds; i >= 0; i-- {
 		bar.Add(1)
 		time.Sleep(1 * time.Second)
