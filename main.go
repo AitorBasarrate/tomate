@@ -11,11 +11,10 @@ import (
 func countdown(seconds int) {
 	bar := progressbar.NewOptions(
 		seconds,
-		progressbar.OptionSetWidth(15),
 		progressbar.OptionShowBytes(false),
 	)
-	for i := seconds; i >= 0; i-- {
-		bar.Add(1)
+	for i := 0; i <= seconds; i++ {
+		bar.Set(i)
 		time.Sleep(1 * time.Second)
 	}
 }
