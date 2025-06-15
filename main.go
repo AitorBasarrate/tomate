@@ -8,6 +8,10 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
+func clearAboveLine() {
+	fmt.Print("\033[1A\033[2K\r")
+}
+
 func countdown(seconds int) {
 	bar := progressbar.NewOptions(
 		seconds,
@@ -15,7 +19,10 @@ func countdown(seconds int) {
 		progressbar.OptionSetPredictTime(false),
 		progressbar.OptionShowElapsedTimeOnFinish(),
 	)
+	bar.RenderBlank()
 	for i := 0; i <= seconds; i++ {
+		clearAboveLine()
+		fmt.Printf("  %02d:%02d\n", i/60, i%60)
 		bar.Set(i)
 		time.Sleep(1 * time.Second)
 	}
