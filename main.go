@@ -12,6 +12,8 @@ func countdown(seconds int) {
 	bar := progressbar.NewOptions(
 		seconds,
 		progressbar.OptionShowBytes(false),
+		progressbar.OptionSetPredictTime(false),
+		progressbar.OptionShowElapsedTimeOnFinish(),
 	)
 	for i := 0; i <= seconds; i++ {
 		bar.Set(i)
