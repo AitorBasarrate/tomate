@@ -24,7 +24,7 @@ func countdown(seconds int) {
 }
 
 func alertMessage(msg string) {
-	err := beeep.Alert("TOMATE", msg, "")
+	err := beeep.Alert("TOMATE", msg, "🍅")
 	if err != nil {
 		fmt.Printf("Error sending alert: %s", err)
 	}
