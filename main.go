@@ -16,9 +16,9 @@ func countdown(seconds int) {
 		progressbar.OptionShowElapsedTimeOnFinish(),
 	)
 	bar.RenderBlank()
-	for i := 0; i <= seconds; i++ {
-		bar.Add(1)
+	for i := 0; i < seconds; i++ {
 		time.Sleep(1 * time.Second)
+		bar.Add(1)
 	}
 }
 
