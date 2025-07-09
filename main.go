@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gen2brain/beeep"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -23,6 +24,11 @@ func countdown(seconds int) {
 }
 
 func main() {
+	beeep.AppName = "tomate"
+	err := beeep.Alert("Prueba alerta", "mensaje de prueba", "")
+	if err != nil {
+		fmt.Printf("Error sending alert: %s", err)
+	}
 	focus_minutes := flag.Int("fm", 0, "Minutos que dura la concentracion")
 	focus_seconds := flag.Int("fs", 0, "Segundos que dura la concentracion")
 	rest_minutes := flag.Int("dm", 0, "Minutos que dura el descanso")
