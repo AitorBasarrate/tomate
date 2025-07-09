@@ -23,12 +23,16 @@ func countdown(seconds int) {
 	}
 }
 
-func main() {
-	beeep.AppName = "tomate"
-	err := beeep.Alert("Prueba alerta", "mensaje de prueba", "")
+func alertMessage(msg string) {
+	err := beeep.Alert("TOMATE", msg, "")
 	if err != nil {
 		fmt.Printf("Error sending alert: %s", err)
 	}
+}
+
+func main() {
+	beeep.AppName = "tomate"
+
 	focus_minutes := flag.Int("fm", 0, "Minutos que dura la concentracion")
 	focus_seconds := flag.Int("fs", 0, "Segundos que dura la concentracion")
 	rest_minutes := flag.Int("dm", 0, "Minutos que dura el descanso")
@@ -46,16 +50,14 @@ func main() {
 
 	i := 1
 	for i <= *repetitions {
-		fmt.Println("")
-		fmt.Println("Start to focus!")
+		alertMessage("Start to focus!")
 		countdown(total_focus)
 		if total_rest > 0 {
-			fmt.Println("")
-			fmt.Println("You can rest now")
+			alertMessage("You can rest now")
 			countdown(total_rest)
 		}
 		i++
 	}
-	fmt.Println("")
-	fmt.Println("Finished")
+	alertMessage("Finished!")
+
 }
