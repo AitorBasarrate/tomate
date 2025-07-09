@@ -9,6 +9,15 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
+
+func alertMessage(msg string) {
+	err := beeep.Alert("TOMATE", msg, "🍅")
+	if err != nil {
+		fmt.Printf("Error sending alert: %s", err)
+	}
+}
+
+
 func countdown(seconds int) {
 	bar := progressbar.NewOptions(
 		seconds,
@@ -17,18 +26,21 @@ func countdown(seconds int) {
 		progressbar.OptionShowElapsedTimeOnFinish(),
 	)
 	bar.RenderBlank()
+
+	var halfway int
+	if seconds >= 120 {
+		halfway = seconds / 2
+	}
+
 	for i := 0; i < seconds; i++ {
 		time.Sleep(1 * time.Second)
+		if i == halfway && i > 0 {
+			alertMessage("Keep up! You're halfway")
+		}
 		bar.Add(1)
 	}
 }
 
-func alertMessage(msg string) {
-	err := beeep.Alert("TOMATE", msg, "🍅")
-	if err != nil {
-		fmt.Printf("Error sending alert: %s", err)
-	}
-}
 
 func main() {
 	beeep.AppName = "tomate"
