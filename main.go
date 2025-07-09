@@ -71,5 +71,6 @@ func main() {
 		i++
 	}
 	alertMessage("Finished!")
+	fmt.Println("")
 
 }
