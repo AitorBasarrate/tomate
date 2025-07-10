@@ -16,6 +16,15 @@ func alertMessage(msg string) {
 	}
 }
 
+func formatTime(seconds int) string {
+	if seconds < 60 {
+		return fmt.Sprintf("%ds", seconds)
+	}
+	minutes := seconds / 60
+	seconds -= 60 * minutes
+	return fmt.Sprintf("%dmin %ds", minutes, seconds)
+}
+
 func countdown(seconds int) {
 	bar := progressbar.NewOptions(
 		seconds,
@@ -33,7 +42,9 @@ func countdown(seconds int) {
 	for i := 0; i < seconds; i++ {
 		time.Sleep(1 * time.Second)
 		if i == halfway && i > 0 {
-			alertMessage("Keep up! You're halfway")
+			timeLeft := formatTime(i)
+			msg := fmt.Sprintf("Keep up! You're halfway - %s", timeLeft)
+			alertMessage(msg)
 		}
 		bar.Add(1)
 	}
