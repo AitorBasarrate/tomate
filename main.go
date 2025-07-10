@@ -9,14 +9,12 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-
 func alertMessage(msg string) {
-	err := beeep.Alert("TOMATE", msg, "🍅")
+	err := beeep.Alert("TOMATE", msg, "./img/fresh-tomato-vegetable.png")
 	if err != nil {
 		fmt.Printf("Error sending alert: %s", err)
 	}
 }
-
 
 func countdown(seconds int) {
 	bar := progressbar.NewOptions(
@@ -40,7 +38,6 @@ func countdown(seconds int) {
 		bar.Add(1)
 	}
 }
-
 
 func main() {
 	beeep.AppName = "tomate"
