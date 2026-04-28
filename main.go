@@ -32,7 +32,7 @@ func countdown(seconds int) {
 		halfway = seconds / 2
 	}
 
-	for i := 0; i < seconds; i++ {
+	for i := range seconds {
 		time.Sleep(1 * time.Second)
 		if i == halfway && i > 0 {
 			alertMessage("Keep up! You're halfway")
@@ -60,15 +60,13 @@ func main() {
 		return
 	}
 
-	i := 1
-	for i <= *repetitions {
+	for range *repetitions {
 		alertMessage("Start to focus!")
 		countdown(total_focus)
 		if total_rest > 0 {
 			alertMessage("You can rest now")
 			countdown(total_rest)
 		}
-		i++
 	}
 	alertMessage("Finished!")
 	fmt.Println("")
