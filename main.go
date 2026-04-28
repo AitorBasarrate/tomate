@@ -89,34 +89,31 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) nextPhase() (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
 	switch m.phase {
 	case focusPhase:
-		alertMessage("You can rest now")
 		if m.restDur > 0 {
 			m.phase = restPhase
 			m.timer = timer.New(m.restDur)
-			cmd = m.timer.Init()
-		} else {
-			return m.handleFocusEnd()
+			return m, tea.Batch(alertCmd("You can rest now"), m.timer.Init())
 		}
+		return m.handleFocusEnd(alertCmd("You can rest now"))
 	case restPhase:
 		return m.handleFocusEnd()
 	}
-	return m, cmd
+	return m, nil
 }
 
-func (m model) handleFocusEnd() (tea.Model, tea.Cmd) {
+func (m model) handleFocusEnd(extraCmds ...tea.Cmd) (tea.Model, tea.Cmd) {
 	m.repetition++
 	if m.repetition >= m.totalReps {
 		m.phase = finishedPhase
-		alertMessage("Finished!")
-		return m, tea.Quit
+		cmds := append(extraCmds, alertCmd("Finished!"), tea.Quit)
+		return m, tea.Batch(cmds...)
 	}
-	alertMessage("Start to focus!")
 	m.phase = focusPhase
 	m.timer = timer.New(m.focusDur)
-	return m, m.timer.Init()
+	cmds := append(extraCmds, alertCmd("Start to focus!"), m.timer.Init())
+	return m, tea.Batch(cmds...)
 }
 
 func (m model) View() string {
@@ -155,8 +152,11 @@ func (m model) View() string {
 	return s
 }
 
-func alertMessage(msg string) {
-	_ = beeep.Alert("TOMATE", msg, "🍅")
+func alertCmd(msg string) tea.Cmd {
+	return func() tea.Msg {
+		_ = beeep.Alert("TOMATE", msg, "🍅")
+		return nil
+	}
 }
 
 func main() {
