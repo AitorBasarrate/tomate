@@ -3,72 +3,192 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 	"time"
 
+	"github.com/charmbracelet/bubbles/progress"
+	"github.com/charmbracelet/bubbles/timer"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/gen2brain/beeep"
-	"github.com/schollz/progressbar/v3"
 )
 
+type phase int
+
+const (
+	focusPhase phase = iota
+	restPhase
+	finishedPhase
+)
+
+var (
+	titleStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("#FAFAFA")).
+			Background(lipgloss.Color("#EF4444")).
+			Padding(0, 1).
+			MarginBottom(1)
+
+	focusStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#EF4444")).
+			Bold(true)
+
+	restStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#10B981")).
+			Bold(true)
+
+	helpStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#737373")).
+			MarginTop(1)
+)
+
+type model struct {
+	phase       phase
+	repetition  int
+	totalReps   int
+	focusDur    time.Duration
+	restDur     time.Duration
+	timer       timer.Model
+	progress    progress.Model
+	quitting    bool
+	interrupted bool
+}
+
+func (m model) Init() tea.Cmd {
+	return m.timer.Init()
+}
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "q", "ctrl+c":
+			m.quitting = true
+			return m, tea.Quit
+		case " ":
+			return m, m.timer.Toggle()
+		case "r":
+			return m, m.timer.Init()
+		}
+
+	case timer.TickMsg:
+		var cmd tea.Cmd
+		m.timer, cmd = m.timer.Update(msg)
+		return m, cmd
+
+	case timer.StartStopMsg:
+		var cmd tea.Cmd
+		m.timer, cmd = m.timer.Update(msg)
+		return m, cmd
+
+	case timer.TimeoutMsg:
+		return m.nextPhase()
+	}
+
+	return m, nil
+}
+
+func (m model) nextPhase() (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	switch m.phase {
+	case focusPhase:
+		alertMessage("You can rest now")
+		if m.restDur > 0 {
+			m.phase = restPhase
+			m.timer = timer.New(m.restDur)
+			cmd = m.timer.Init()
+		} else {
+			return m.handleFocusEnd()
+		}
+	case restPhase:
+		return m.handleFocusEnd()
+	}
+	return m, cmd
+}
+
+func (m model) handleFocusEnd() (tea.Model, tea.Cmd) {
+	m.repetition++
+	if m.repetition >= m.totalReps {
+		m.phase = finishedPhase
+		alertMessage("Finished!")
+		return m, tea.Quit
+	}
+	alertMessage("Start to focus!")
+	m.phase = focusPhase
+	m.timer = timer.New(m.focusDur)
+	return m, m.timer.Init()
+}
+
+func (m model) View() string {
+	if m.quitting {
+		return "See you later! 🍅\n"
+	}
+
+	s := titleStyle.Render("TOMATE") + "\n"
+
+	var phaseName string
+	var currentStyle lipgloss.Style
+	var totalDur time.Duration
+
+	switch m.phase {
+	case focusPhase:
+		phaseName = "FOCUS"
+		currentStyle = focusStyle
+		totalDur = m.focusDur
+	case restPhase:
+		phaseName = "REST"
+		currentStyle = restStyle
+		totalDur = m.restDur
+	case finishedPhase:
+		return s + "All done! 🍅\n"
+	}
+
+	s += fmt.Sprintf("Repetition: %d/%d\n", m.repetition+1, m.totalReps)
+	s += currentStyle.Render(phaseName) + " " + m.timer.View() + "\n\n"
+
+	remaining := m.timer.Timeout
+	percent := 1.0 - float64(remaining)/float64(totalDur)
+	s += m.progress.ViewAs(percent) + "\n"
+
+	s += helpStyle.Render("space: pause/resume • r: reset • q: quit")
+
+	return s
+}
 
 func alertMessage(msg string) {
-	err := beeep.Alert("TOMATE", msg, "🍅")
-	if err != nil {
-		fmt.Printf("Error sending alert: %s", err)
-	}
+	_ = beeep.Alert("TOMATE", msg, "🍅")
 }
-
-
-func countdown(seconds int) {
-	bar := progressbar.NewOptions(
-		seconds,
-		progressbar.OptionShowBytes(false),
-		progressbar.OptionSetPredictTime(false),
-		progressbar.OptionShowElapsedTimeOnFinish(),
-	)
-	bar.RenderBlank()
-
-	var halfway int
-	if seconds >= 120 {
-		halfway = seconds / 2
-	}
-
-	for i := range seconds {
-		time.Sleep(1 * time.Second)
-		if i == halfway && i > 0 {
-			alertMessage("Keep up! You're halfway")
-		}
-		bar.Add(1)
-	}
-}
-
 
 func main() {
 	beeep.AppName = "tomate"
 
-	focus_minutes := flag.Int("fm", 0, "Minutos que dura la concentracion")
-	focus_seconds := flag.Int("fs", 0, "Segundos que dura la concentracion")
-	rest_minutes := flag.Int("dm", 0, "Minutos que dura el descanso")
-	rest_seconds := flag.Int("ds", 0, "Segundos que dura el descanso")
-	repetitions := flag.Int("r", 1, "Veces que se va a repetir")
+	focusMin := flag.Int("fm", 0, "Focus minutes")
+	focusSec := flag.Int("fs", 0, "Focus seconds")
+	restMin := flag.Int("dm", 0, "Rest minutes")
+	restSec := flag.Int("ds", 0, "Rest seconds")
+	reps := flag.Int("r", 1, "Repetitions")
 	flag.Parse()
 
-	total_focus := *focus_minutes*60 + *focus_seconds
-	total_rest := *rest_minutes*60 + *rest_seconds
+	focusDur := time.Duration(*focusMin)*time.Minute + time.Duration(*focusSec)*time.Second
+	restDur := time.Duration(*restMin)*time.Minute + time.Duration(*restSec)*time.Second
 
-	if total_focus <= 0 {
-		fmt.Println("Introduce una duracion valida")
-		return
+	if focusDur <= 0 {
+		fmt.Println("Please provide a valid focus duration.")
+		os.Exit(1)
 	}
 
-	for range *repetitions {
-		alertMessage("Start to focus!")
-		countdown(total_focus)
-		if total_rest > 0 {
-			alertMessage("You can rest now")
-			countdown(total_rest)
-		}
+	m := model{
+		phase:     focusPhase,
+		totalReps: *reps,
+		focusDur:  focusDur,
+		restDur:   restDur,
+		timer:     timer.New(focusDur),
+		progress:  progress.New(progress.WithGradient("#FF9B9B", "#EF4444")),
 	}
-	alertMessage("Finished!")
-	fmt.Println("")
 
+	p := tea.NewProgram(m)
+	if _, err := p.Run(); err != nil {
+		fmt.Printf("Error: %v", err)
+		os.Exit(1)
+	}
 }
